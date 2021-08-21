@@ -1,0 +1,642 @@
+---
+title:    "Tensei Data Science"
+subtitle: "Draft League Season II"
+author:   "Patricio Coutinho"
+output: 
+    html_document:
+        code_folding: hide
+        toc: true
+        toc_float: true
+        theme: cerulean
+        df_print: paged
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+
+---
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(tibble)
+library(dplyr)
+library(readr)
+library(lubridate)
+library(janitor)
+library(ggplot2)
+library(tidyr)
+library(readxl)
+library(openxlsx)
+library(DBI)
+library(stringr)
+library(infer)
+library(rvest)
+library(leaflet)
+library(purrr)
+library(magrittr)
+library(httr)
+library(ggmap)
+library(prettydoc)
+library(plotly)
+library(dash)
+library(dashCoreComponents)
+library(dashHtmlComponents)
+library(dashTable)
+```
+
+## Get Data
+
+Test rmarkdown knit
+
+```{r message=FALSE, warning=FALSE}
+
+path <- "C:/Users/lenovo/Desktop/Pato/Data Science/Tensei_datascience/La liga magiquera/Draft League Season II (20_21).xlsx"
+
+draftleague_s2 <-  
+  path %>% 
+  excel_sheets() %>% 
+  set_names(c()) %>% 
+  map(read_excel, path = path)
+#  as.data.frame(x1 = letters[1:4],    # Example data
+#                   x2 = 3,
+#                  x3 = 1:4)
+  #  as_tibble( .rows = NULL, .name_repair = c("check_unique","unique","universal","minimal"), #rownames = pkgconfig::get_config("tibble::rownames",NULL))
+
+```
+
+## Event 1
+
+Output is 
+
+```{r message=FALSE, warning=FALSE}
+
+######################################################################################
+######################################################################################
+####                              EVENT#1                                         ####
+######################################################################################
+######################################################################################
+
+event1_raw <-
+  draftleague_s2[[1]] %>% 
+  mutate(event1_id = 1 ) %>% 
+  mutate(day = D[1], month = M[1], year = Y[1], format = D [3]) 
+
+event1_metadata <-
+  event1_raw %>% 
+  mutate(day = as.integer(day), month = as.integer(month), year = as.integer(year)) %>% 
+  select("day", "month", "year", "event1_id", "format") %>% 
+  mutate(event1_date = dmy(paste(day,"/",month,"/",year))) %>% 
+  head(1)
+
+event1_players <-
+  event1_raw %>% 
+  select(1,"event1_id") %>% 
+  drop_na(1) %>% 
+  rename("Players" = 1) %>% 
+  filter(Players != c("Date", "Format", "Players")) %>% 
+  left_join(event1_metadata, by = c("event1_id" = "event1_id"))
+
+event1_plcolors <-
+  event1_raw %>% 
+  select(1,"event1_id","D","M","Y",5,6,7) %>% 
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  left_join(event1_players, by = c("Players" = "Players")) %>% 
+  mutate(Player_event1_id = paste(event1_id, Players))
+
+event1_pl_nbr <-
+  event1_plcolors %>% 
+  nrow()*2+9
+
+event1_results <-
+  event1_raw %>% 
+  select(1,"event1_id", 9:event1_pl_nbr[1]) %>%
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  as_tibble(.name_repair = c("unique", "universal", "minimal")) 
+
+
+player1_W <- str_glue(event1_results$Players[[1]],"W", .sep = "_")
+player1_L <- str_glue(event1_results$Players[[1]],"L", .sep = "_")
+player2_W <- str_glue(event1_results$Players[[2]],"W", .sep = "_")
+player2_L <- str_glue(event1_results$Players[[2]],"L", .sep = "_")
+player3_W <- str_glue(event1_results$Players[[3]],"W", .sep = "_")
+player3_L <- str_glue(event1_results$Players[[3]],"L", .sep = "_")
+player4_W <- str_glue(event1_results$Players[[4]],"W", .sep = "_")
+player4_L <- str_glue(event1_results$Players[[4]],"L", .sep = "_")
+player5_W <- str_glue(event1_results$Players[[5]],"W", .sep = "_")
+player5_L <- str_glue(event1_results$Players[[5]],"L", .sep = "_")
+player6_W <- str_glue(event1_results$Players[[6]],"W", .sep = "_")
+player6_L <- str_glue(event1_results$Players[[6]],"L", .sep = "_")
+#player7_W <- str_glue(event1_results$Players[[7]],"W", .sep = "_")
+#player7_L <- str_glue(event1_results$Players[[7]],"L", .sep = "_")
+#player8_W <- str_glue(event1_results$Players[[8]],"W", .sep = "_")
+#player8_L <- str_glue(event1_results$Players[[8]],"L", .sep = "_")
+
+players_vector <-
+  as.vector(c(player1_W, player1_L, player2_W, player2_L, player3_W, player3_L,
+              player4_W, player4_L, player5_W, player5_L, player6_W, player6_L
+#              ,player7_W, player7_L, player8_W, player8_L
+              ))
+
+temp_results_heal <- 
+  event1_results %>% 
+  select(3:14) %>% 
+  set_names(players_vector) %>% 
+  mutate(player_id = row_number())
+
+event1_results_heal <-
+  event1_results %>% 
+  mutate(player_id = row_number()) %>% 
+  left_join(temp_results_heal, by = c("player_id" = "player_id")) %>% 
+  select(-(3:14)) %>% 
+  left_join(event1_plcolors, by = c("Players" = "Players")) %>% 
+  select(-"1.x", -"1.y") 
+
+event1_results_heal
+
+```
+
+## Event 2
+
+Output is 
+
+```{r message=FALSE, warning=FALSE}
+
+######################################################################################
+######################################################################################
+####                              EVENT#2                                         ####
+######################################################################################
+######################################################################################
+# 43 occurrences of rpl so far.
+
+event2_raw <-
+  draftleague_s2[[2]] %>% 
+  mutate(event2_id = 2 ) %>% 
+  mutate(day = D[1], month = M[1], year = Y[1], format = D [3]) 
+
+event2_metadata <-
+  event2_raw %>% 
+  mutate(day = as.integer(day), month = as.integer(month), year = as.integer(year)) %>% 
+  select("day", "month", "year", "event2_id", "format") %>% 
+  mutate(event2_date = dmy(paste(day,"/",month,"/",year))) %>% 
+  head(1)
+
+event2_players <-
+  event2_raw %>% 
+  select(1,"event2_id") %>% 
+  drop_na(1) %>% 
+  rename("Players" = 1) %>% 
+  filter(Players != c("Date", "Format", "Players")) %>% 
+  left_join(event2_metadata, by = c("event2_id" = "event2_id"))
+
+event2_plcolors <-
+  event2_raw %>% 
+  select(1,"event2_id","D","M","Y",5,6,7) %>% 
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  left_join(event2_players, by = c("Players" = "Players")) %>% 
+  mutate(Player_event2_id = paste(event2_id, Players))
+
+event2_pl_nbr <-
+  event2_plcolors %>% 
+  nrow()*2+9
+
+event2_results <-
+  event2_raw %>% 
+  select(1,"event2_id", 9:event2_pl_nbr[1]) %>%
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  as_tibble(.name_repair = c("unique", "universal", "minimal")) 
+
+
+player1_W <- str_glue(event2_results$Players[[1]],"W", .sep = "_")
+player1_L <- str_glue(event2_results$Players[[1]],"L", .sep = "_")
+player2_W <- str_glue(event2_results$Players[[2]],"W", .sep = "_")
+player2_L <- str_glue(event2_results$Players[[2]],"L", .sep = "_")
+player3_W <- str_glue(event2_results$Players[[3]],"W", .sep = "_")
+player3_L <- str_glue(event2_results$Players[[3]],"L", .sep = "_")
+player4_W <- str_glue(event2_results$Players[[4]],"W", .sep = "_")
+player4_L <- str_glue(event2_results$Players[[4]],"L", .sep = "_")
+player5_W <- str_glue(event2_results$Players[[5]],"W", .sep = "_")
+player5_L <- str_glue(event2_results$Players[[5]],"L", .sep = "_")
+player6_W <- str_glue(event2_results$Players[[6]],"W", .sep = "_")
+player6_L <- str_glue(event2_results$Players[[6]],"L", .sep = "_")
+#player7_W <- str_glue(event2_results$Players[[7]],"W", .sep = "_")
+#player7_L <- str_glue(event2_results$Players[[7]],"L", .sep = "_")
+#player8_W <- str_glue(event2_results$Players[[8]],"W", .sep = "_")
+#player8_L <- str_glue(event2_results$Players[[8]],"L", .sep = "_")
+
+players_vector <-
+  as.vector(c(player1_W, player1_L, player2_W, player2_L, player3_W, player3_L,
+              player4_W, player4_L, player5_W, player5_L, player6_W, player6_L
+#              ,player7_W, player7_L, player8_W, player8_L
+              ))
+
+temp_results_heal <- 
+  event2_results %>% 
+  select(3:14) %>% 
+  set_names(players_vector) %>% 
+  mutate(player_id = row_number())
+
+event2_results_heal <-
+  event2_results %>% 
+  mutate(player_id = row_number()) %>% 
+  left_join(temp_results_heal, by = c("player_id" = "player_id")) %>% 
+  select(-(3:14)) %>% 
+  left_join(event2_plcolors, by = c("Players" = "Players")) %>% 
+  select(-"1.x", -"1.y") 
+
+event2_results_heal
+
+```
+
+
+## Event 3
+
+Output is 
+
+```{r message=FALSE, warning=FALSE}
+
+######################################################################################
+######################################################################################
+####                              EVENT#3                                         ####
+######################################################################################
+######################################################################################
+# 45 occurrences of rpl so far.
+# 7 players
+
+event3_raw <-
+  draftleague_s2[[3]] %>% 
+  mutate(event3_id = 3 ) %>% 
+  mutate(day = D[1], month = M[1], year = Y[1], format = D [3]) 
+
+event3_metadata <-
+  event3_raw %>% 
+  mutate(day = as.integer(day), month = as.integer(month), year = as.integer(year)) %>% 
+  select("day", "month", "year", "event3_id", "format") %>% 
+  mutate(event3_date = dmy(paste(day,"/",month,"/",year))) %>% 
+  head(1)
+
+event3_players <-
+  event3_raw %>% 
+  select(1,"event3_id") %>% 
+  drop_na(1) %>% 
+  rename("Players" = 1) %>% 
+  filter(Players != c("Date", "Format", "Players")) %>% 
+  left_join(event3_metadata, by = c("event3_id" = "event3_id"))
+
+event3_plcolors <-
+  event3_raw %>% 
+  select(1,"event3_id","D","M","Y",5,6,7) %>% 
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  left_join(event3_players, by = c("Players" = "Players")) %>% 
+  mutate(Player_event3_id = paste(event3_id, Players))
+
+event3_pl_nbr <-
+  event3_plcolors %>% 
+  nrow()*2+9
+
+event3_results <-
+  event3_raw %>% 
+  select(1,"event3_id", 9:event3_pl_nbr[1]) %>%
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  as_tibble(.name_repair = c("unique", "universal", "minimal")) 
+
+
+player1_W <- str_glue(event3_results$Players[[1]],"W", .sep = "_")
+player1_L <- str_glue(event3_results$Players[[1]],"L", .sep = "_")
+player2_W <- str_glue(event3_results$Players[[2]],"W", .sep = "_")
+player2_L <- str_glue(event3_results$Players[[2]],"L", .sep = "_")
+player3_W <- str_glue(event3_results$Players[[3]],"W", .sep = "_")
+player3_L <- str_glue(event3_results$Players[[3]],"L", .sep = "_")
+player4_W <- str_glue(event3_results$Players[[4]],"W", .sep = "_")
+player4_L <- str_glue(event3_results$Players[[4]],"L", .sep = "_")
+player5_W <- str_glue(event3_results$Players[[5]],"W", .sep = "_")
+player5_L <- str_glue(event3_results$Players[[5]],"L", .sep = "_")
+player6_W <- str_glue(event3_results$Players[[6]],"W", .sep = "_")
+player6_L <- str_glue(event3_results$Players[[6]],"L", .sep = "_")
+#player7_W <- str_glue(event3_results$Players[[7]],"W", .sep = "_")
+#player7_L <- str_glue(event3_results$Players[[7]],"L", .sep = "_")
+#player8_W <- str_glue(event3_results$Players[[8]],"W", .sep = "_")
+#player8_L <- str_glue(event3_results$Players[[8]],"L", .sep = "_")
+
+players_vector <-
+  as.vector(c(player1_W, player1_L, player2_W, player2_L, player3_W, player3_L,
+              player4_W, player4_L, player5_W, player5_L, player6_W, player6_L
+#              ,player7_W, player7_L, player8_W, player8_L
+              ))
+
+temp_results_heal <- 
+  event3_results %>% 
+  select(3:14) %>% 
+  set_names(players_vector) %>% 
+  mutate(player_id = row_number())
+
+event3_results_heal <-
+  event3_results %>% 
+  mutate(player_id = row_number()) %>% 
+  left_join(temp_results_heal, by = c("player_id" = "player_id")) %>% 
+  select(-(3:14)) %>% 
+  left_join(event3_plcolors, by = c("Players" = "Players")) %>% 
+  select(-"3.x", -"3.y") 
+
+event3_results_heal
+
+```
+
+## Event 4
+
+Omitted by now, different datasets (commander legends).
+
+## Event 5
+
+Output is 
+
+```{r message=FALSE, warning=FALSE}
+
+######################################################################################
+######################################################################################
+####                              EVENT#5                                         ####
+######################################################################################
+######################################################################################
+# 45 occurrences of rpl so far.
+
+
+event5_raw <-
+  draftleague_s2[[5]] %>% 
+  mutate(event5_id = 5 ) %>% 
+  mutate(day = D[1], month = M[1], year = Y[1], format = D [3]) 
+
+event5_metadata <-
+  event5_raw %>% 
+  mutate(day = as.integer(day), month = as.integer(month), year = as.integer(year)) %>% 
+  select("day", "month", "year", "event5_id", "format") %>% 
+  mutate(event5_date = dmy(paste(day,"/",month,"/",year))) %>% 
+  head(1)
+
+event5_players <-
+  event5_raw %>% 
+  select(1,"event5_id") %>% 
+  drop_na(1) %>% 
+  rename("Players" = 1) %>% 
+  filter(Players != c("Date", "Format", "Players")) %>% 
+  left_join(event5_metadata, by = c("event5_id" = "event5_id"))
+
+event5_plcolors <-
+  event5_raw %>% 
+  select(1,"event5_id","D","M","Y",5,6,7) %>% 
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  left_join(event5_players, by = c("Players" = "Players")) %>% 
+  mutate(Player_event5_id = paste(event5_id, Players))
+
+event5_pl_nbr <-
+  event5_plcolors %>% 
+  nrow()*2+9
+
+event5_results <-
+  event5_raw %>% 
+  select(1,"event5_id", 9:event5_pl_nbr[1]) %>%
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  as_tibble(.name_repair = c("unique", "universal", "minimal")) 
+
+
+player1_W <- str_glue(event5_results$Players[[1]],"W", .sep = "_")
+player1_L <- str_glue(event5_results$Players[[1]],"L", .sep = "_")
+player2_W <- str_glue(event5_results$Players[[2]],"W", .sep = "_")
+player2_L <- str_glue(event5_results$Players[[2]],"L", .sep = "_")
+player3_W <- str_glue(event5_results$Players[[3]],"W", .sep = "_")
+player3_L <- str_glue(event5_results$Players[[3]],"L", .sep = "_")
+player4_W <- str_glue(event5_results$Players[[4]],"W", .sep = "_")
+player4_L <- str_glue(event5_results$Players[[4]],"L", .sep = "_")
+player5_W <- str_glue(event5_results$Players[[5]],"W", .sep = "_")
+player5_L <- str_glue(event5_results$Players[[5]],"L", .sep = "_")
+player6_W <- str_glue(event5_results$Players[[6]],"W", .sep = "_")
+player6_L <- str_glue(event5_results$Players[[6]],"L", .sep = "_")
+#player7_W <- str_glue(event5_results$Players[[7]],"W", .sep = "_")
+#player7_L <- str_glue(event5_results$Players[[7]],"L", .sep = "_")
+#player8_W <- str_glue(event5_results$Players[[8]],"W", .sep = "_")
+#player8_L <- str_glue(event5_results$Players[[8]],"L", .sep = "_")
+
+players_vector <-
+  as.vector(c(player1_W, player1_L, player2_W, player2_L, player3_W, player3_L,
+              player4_W, player4_L, player5_W, player5_L, player6_W, player6_L
+#              ,player7_W, player7_L, player8_W, player8_L
+              ))
+
+temp_results_heal <- 
+  event5_results %>% 
+  select(3:14) %>% 
+  set_names(players_vector) %>% 
+  mutate(player_id = row_number())
+
+event5_results_heal <-
+  event5_results %>% 
+  mutate(player_id = row_number()) %>% 
+  left_join(temp_results_heal, by = c("player_id" = "player_id")) %>% 
+  select(-(3:14)) %>% 
+  left_join(event5_plcolors, by = c("Players" = "Players")) %>% 
+  select(-"5.x", -"5.y") 
+
+event5_results_heal
+
+```
+
+## Event 6
+
+Omitted by now, different datasets (commander legends), 5 players less than min complexity.
+
+## Event 7
+
+Output is 
+
+```{r message=FALSE, warning=FALSE}
+
+######################################################################################
+######################################################################################
+####                              EVENT#7                                         ####
+######################################################################################
+######################################################################################
+# 45 occurrences of rpl so far.
+
+
+event8_raw <-
+  draftleague_s2[[8]] %>% 
+  mutate(event8_id = 8 ) %>% 
+  mutate(day = D[1], month = M[1], year = Y[1], format = D [3]) 
+
+event8_metadata <-
+  event8_raw %>% 
+  mutate(day = as.integer(day), month = as.integer(month), year = as.integer(year)) %>% 
+  select("day", "month", "year", "event8_id", "format") %>% 
+  mutate(event8_date = dmy(paste(day,"/",month,"/",year))) %>% 
+  head(1)
+
+event8_players <-
+  event8_raw %>% 
+  select(1,"event8_id") %>% 
+  drop_na(1) %>% 
+  rename("Players" = 1) %>% 
+  filter(Players != c("Date", "Format", "Players")) %>% 
+  left_join(event8_metadata, by = c("event8_id" = "event8_id"))
+
+event8_plcolors <-
+  event8_raw %>% 
+  select(1,"event8_id","D","M","Y",5,6,7) %>% 
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  left_join(event8_players, by = c("Players" = "Players")) %>% 
+  mutate(Player_event8_id = paste(event8_id, Players))
+
+event8_pl_nbr <-
+  event8_plcolors %>% 
+  nrow()*2+9
+
+event8_results <-
+  event8_raw %>% 
+  select(1,"event8_id", 9:event8_pl_nbr[1]) %>%
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  as_tibble(.name_repair = c("unique", "universal", "minimal")) 
+
+
+player1_W <- str_glue(event8_results$Players[[1]],"W", .sep = "_")
+player1_L <- str_glue(event8_results$Players[[1]],"L", .sep = "_")
+player2_W <- str_glue(event8_results$Players[[2]],"W", .sep = "_")
+player2_L <- str_glue(event8_results$Players[[2]],"L", .sep = "_")
+player3_W <- str_glue(event8_results$Players[[3]],"W", .sep = "_")
+player3_L <- str_glue(event8_results$Players[[3]],"L", .sep = "_")
+player4_W <- str_glue(event8_results$Players[[4]],"W", .sep = "_")
+player4_L <- str_glue(event8_results$Players[[4]],"L", .sep = "_")
+player5_W <- str_glue(event8_results$Players[[5]],"W", .sep = "_")
+player5_L <- str_glue(event8_results$Players[[5]],"L", .sep = "_")
+player6_W <- str_glue(event8_results$Players[[6]],"W", .sep = "_")
+player6_L <- str_glue(event8_results$Players[[6]],"L", .sep = "_")
+#player7_W <- str_glue(event8_results$Players[[7]],"W", .sep = "_")
+#player7_L <- str_glue(event8_results$Players[[7]],"L", .sep = "_")
+#player8_W <- str_glue(event8_results$Players[[8]],"W", .sep = "_")
+#player8_L <- str_glue(event8_results$Players[[8]],"L", .sep = "_")
+
+players_vector <-
+  as.vector(c(player1_W, player1_L, player2_W, player2_L, player3_W, player3_L,
+              player4_W, player4_L, player5_W, player5_L, player6_W, player6_L
+#              ,player7_W, player7_L, player8_W, player8_L
+              ))
+
+temp_results_heal <- 
+  event8_results %>% 
+  select(3:14) %>% 
+  set_names(players_vector) %>% 
+  mutate(player_id = row_number())
+
+event8_results_heal <-
+  event8_results %>% 
+  mutate(player_id = row_number()) %>% 
+  left_join(temp_results_heal, by = c("player_id" = "player_id")) %>% 
+  select(-(3:14)) %>% 
+  left_join(event8_plcolors, by = c("Players" = "Players")) %>% 
+  select(-"8.x", -"8.y") 
+
+event8_results_heal
+
+```
+
+## Event 7
+
+Output is 
+
+```{r message=FALSE, warning=FALSE}
+
+######################################################################################
+######################################################################################
+####                              EVENT#7                                         ####
+######################################################################################
+######################################################################################
+# 45 occurrences of rpl so far.
+
+
+event7_raw <-
+  draftleague_s2[[7]] %>% 
+  mutate(event7_id = 7 ) %>% 
+  mutate(day = D[1], month = M[1], year = Y[1], format = D [3]) 
+
+event7_metadata <-
+  event7_raw %>% 
+  mutate(day = as.integer(day), month = as.integer(month), year = as.integer(year)) %>% 
+  select("day", "month", "year", "event7_id", "format") %>% 
+  mutate(event7_date = dmy(paste(day,"/",month,"/",year))) %>% 
+  head(1)
+
+event7_players <-
+  event7_raw %>% 
+  select(1,"event7_id") %>% 
+  drop_na(1) %>% 
+  rename("Players" = 1) %>% 
+  filter(Players != c("Date", "Format", "Players")) %>% 
+  left_join(event7_metadata, by = c("event7_id" = "event7_id"))
+
+event7_plcolors <-
+  event7_raw %>% 
+  select(1,"event7_id","D","M","Y",5,6,7) %>% 
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  left_join(event7_players, by = c("Players" = "Players")) %>% 
+  mutate(Player_event7_id = paste(event7_id, Players))
+
+event7_pl_nbr <-
+  event7_plcolors %>% 
+  nrow()*2+9
+
+event7_results <-
+  event7_raw %>% 
+  select(1,"event7_id", 9:event7_pl_nbr[1]) %>%
+  row_to_names(6) %>% 
+  drop_na(Players) %>% 
+  as_tibble(.name_repair = c("unique", "universal", "minimal")) 
+
+
+player1_W <- str_glue(event7_results$Players[[1]],"W", .sep = "_")
+player1_L <- str_glue(event7_results$Players[[1]],"L", .sep = "_")
+player2_W <- str_glue(event7_results$Players[[2]],"W", .sep = "_")
+player2_L <- str_glue(event7_results$Players[[2]],"L", .sep = "_")
+player3_W <- str_glue(event7_results$Players[[3]],"W", .sep = "_")
+player3_L <- str_glue(event7_results$Players[[3]],"L", .sep = "_")
+player4_W <- str_glue(event7_results$Players[[4]],"W", .sep = "_")
+player4_L <- str_glue(event7_results$Players[[4]],"L", .sep = "_")
+player5_W <- str_glue(event7_results$Players[[5]],"W", .sep = "_")
+player5_L <- str_glue(event7_results$Players[[5]],"L", .sep = "_")
+player6_W <- str_glue(event7_results$Players[[6]],"W", .sep = "_")
+player6_L <- str_glue(event7_results$Players[[6]],"L", .sep = "_")
+#player7_W <- str_glue(event7_results$Players[[7]],"W", .sep = "_")
+#player7_L <- str_glue(event7_results$Players[[7]],"L", .sep = "_")
+#player8_W <- str_glue(event7_results$Players[[8]],"W", .sep = "_")
+#player8_L <- str_glue(event7_results$Players[[8]],"L", .sep = "_")
+
+players_vector <-
+  as.vector(c(player1_W, player1_L, player2_W, player2_L, player3_W, player3_L,
+              player4_W, player4_L, player5_W, player5_L, player6_W, player6_L
+#              ,player7_W, player7_L, player8_W, player8_L
+              ))
+
+temp_results_heal <- 
+  event7_results %>% 
+  select(3:14) %>% 
+  set_names(players_vector) %>% 
+  mutate(player_id = row_number())
+
+event7_results_heal <-
+  event7_results %>% 
+  mutate(player_id = row_number()) %>% 
+  left_join(temp_results_heal, by = c("player_id" = "player_id")) %>% 
+  select(-(3:14)) %>% 
+  left_join(event7_plcolors, by = c("Players" = "Players")) %>% 
+  select(-"7.x", -"7.y") 
+
+event7_results_heal
+
+```
+
