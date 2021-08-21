@@ -1,7 +1,7 @@
 ---
 title:    "Tensei Data Science"
 subtitle: "Draft League Season II"
-author:   "Patricio Coutinho"
+author:   "Report by Patricio Coutinho"
 output: 
     html_document:
         code_folding: hide
@@ -16,6 +16,22 @@ output:
 
 ---
 
+# MTG Analytics notes
+
+### Release v0.1
+
+Welcome to our first report of **MTG analytics**. These are our draft league SII results & insights. 
+Enjoy!.
+
+Special thanks:
+
+<ul>
+  <li>To **Esteban Portero** for model design, data collection and data quality.</li>
+  <li>To the mtg draft league players and supporters.</li>
+</ul>
+
+If you are reading this, reach out to **Insert your sponsor [HERE]**. 
+Gain your spot on our list today!.
 
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
 library(tibble)
@@ -245,7 +261,7 @@ event2_results_heal <-
   left_join(temp_results_heal, by = c("player_id" = "player_id")) %>% 
   select(-(3:14)) %>% 
   left_join(event2_plcolors, by = c("Players" = "Players")) %>% 
-  select(-"1.x", -"1.y") 
+  select(-"2.x", -"2.y") 
 
 event2_results_heal
 
@@ -640,3 +656,11 @@ event7_results_heal
 
 ```
 
+
+
+
+
+    
+    
+    
+    
